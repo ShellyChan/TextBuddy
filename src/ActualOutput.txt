@@ -1,0 +1,33 @@
+Welcome to TextBuddy. inputTextFile.txt is ready for use
+command: 
+inputTextFile.txt is empty
+command: 
+added to inputTextFile.txt: "giggity"
+command: 
+added to inputTextFile.txt: "peter"
+command: 
+added to inputTextFile.txt: "steward"
+command: 
+1.giggity
+2.peter
+3.steward
+command: 
+deleted from inputTextFile.txt: "giggity"
+command: 
+1.peter
+2.steward
+command: 
+added to inputTextFile.txt: "stewie"
+command: 
+1.peter
+2.steward
+3.stewie
+command: 
+INVALID COMMAND INPUT
+command: 
+all content deleted from inputTextFile.txt
+command: 
+inputTextFile.txt is empty
+command: 
+inputTextFile.txt is empty
+command: 

@@ -1,4 +1,3 @@
-import java.awt.Stroke;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -9,28 +8,34 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Scanner;
+
+import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
+
 /**
  * 
  * @author Shelly
- *	
- * Name : Ingine Hmwe
- * Matric No. : A0112835L
- * Team : T16-1J
+ * 
+ *         Name : Ingine Hmwe 
+ *         Tut : W05
+ *         Matric No. : A0112835L 
+ *         Team : T16-1J
  *
  */
 public class TextBuddy {
 
+	// to store user input text in the file
+	public static String fileName;
+	public static String message;
 	private static File inputFile;
-	private static File tempFile;
 
-	private static String fileName;
+	// to store text from file in the list for display purpose
 	private static ArrayList<String> dataListFromFile;
 
-	private static final String MESSAGE_WELCOME = "Welcome to TextBuddy. %s is ready for use\n";
+	private static final String MESSAGE_WELCOME = "Welcome to TextBuddy. %s is ready for use";
 	private static final String MESSAGE_COMMAND = "command: ";
-	private static final String MESSAGE_ADD = "added to %1$s: \"%2$s\"\n";
-	private static final String MESSAGE_DELETE = "deleted from %s: \"%s\"\n";
-	private static final String MESSAGE_CLEAR = "all content deleted from %s\n";
+	private static final String MESSAGE_ADD = "added to %1$s: \"%2$s\"";
+	private static final String MESSAGE_DELETE = "deleted from %s: \"%s\"";
+	private static final String MESSAGE_CLEAR = "all content deleted from %s";
 	private static final String MESSAGE_DISPLAY_EMPTY = "%s is empty";
 
 	private static final String ERROR_INVALID_USER_COMMAND = "INVALID COMMAND INPUT";
@@ -43,113 +48,108 @@ public class TextBuddy {
 
 	private static Scanner scanner = new Scanner(System.in);
 
-	enum COMMAND_TYPE{
+	// possible command types
+	enum COMMAND_TYPE {
 		ADD, DISPLAY, DELETE, CLEAR, EXIT, INVALID
 	};
 
-
 	public static void main(String[] args) throws IOException {
-
-		if (isFileDeclared(args)){
+		
+		if (isFileDeclared(args)) {
 			fileName = args[0];
-			String welcomeMessage = getWelcomeMessage(fileName);
-			showLineToUser(welcomeMessage);
-
-			if (!isFileAlreadyCreated(fileName)){	
-				createFile(inputFile);
+			showLineToUser(String.format(MESSAGE_WELCOME, fileName));
+			createFile(fileName);
+			
+			while (true) {
+				showLineToUser(MESSAGE_COMMAND);	
+				executeCommand(getCommand());
 			}
 
-			while (true){
-				showLineToUser(MESSAGE_COMMAND);
-				String userCommand = getCommand();
-				executeCommand(userCommand);
-			}
-
-		}else{
+		} else {
 			showLineToUser(ERROR_INVALID_FILE_COMMAND);
 		}
 
 	}
 
-	public static void executeCommand(String userCommand) throws IOException{
+	public static void executeCommand(String userCommand) throws IOException {
 		String commandTypeString = getFirstWord(userCommand);
 		COMMAND_TYPE commandType = getCommandType(commandTypeString);
-		String message;
+		
 
-		switch (commandType){
-		case ADD :
+		switch (commandType) {
+		case ADD:
 			String userInputLine = removeFirstWord(userCommand);
 			executeAdd(userInputLine);
-			message = getAddMessage(fileName, userInputLine);
+			message = String.format(MESSAGE_ADD, fileName, userInputLine);
 			showLineToUser(message);
 			break;
-		case DISPLAY :
+		case DISPLAY:
 			executeDisplay();
 			break;
-		case DELETE :
+		case DELETE:
 			int lineNumber = Integer.parseInt(removeFirstWord(userCommand));
 			executeDelete(lineNumber);
 			break;
-		case CLEAR :
+		case CLEAR:
 			executeClear();
-			message = getClearMessage(fileName);
+			message = String.format(MESSAGE_CLEAR, fileName);
 			showLineToUser(message);
 			break;
-		case EXIT :
+		case EXIT:
 			System.exit(0);
-		case INVALID :
-			showLineToUser(ERROR_INVALID_USER_COMMAND);
+		case INVALID:
+			message = ERROR_INVALID_USER_COMMAND;
+			showLineToUser(message);
 			break;
 		}
 
 	}
 
-	private static void executeAdd(String description){
+	private static void executeAdd(String description) {
 		saveToExistingFile(description);
 	}
 
-	private static void executeDisplay() throws IOException{
+	private static void executeDisplay() throws IOException {
 		ArrayList<String> dataFromFile = fetchDataFromFile();
-		if (dataFromFile.isEmpty()){
-			String emptyMessage = getDisplayEmptyMessage(fileName);
+		if (dataFromFile.isEmpty()) {
+			String emptyMessage = String.format(MESSAGE_DISPLAY_EMPTY, fileName);
 			showLineToUser(emptyMessage);
-		}else{
+		} else {
 			String textToDisplay;
 			int lineNumber;
-			for (int i=0; i<dataFromFile.size(); i++){
+			for (int i = 0; i < dataFromFile.size(); i++) {
 				lineNumber = i + 1;
 				textToDisplay = lineNumber + "." + dataFromFile.get(i);
 				showLineToUser(textToDisplay);
 			}
-			showLineToUser(" ");
 		}
 	}
 
-	private static void executeClear(){
+	public static void executeClear() {
 		inputFile.delete();
-		createFile(inputFile);
+		createFile(fileName);
 	}
 
-	private static void executeDelete(int lineNumber){
+	public static void executeDelete(int lineNumber) {
 		String lineToRemove = null;
-		try{
+		try {
 
 			dataListFromFile = fetchDataFromFile();
 
-			lineToRemove = dataListFromFile.get(lineNumber-1);
-			dataListFromFile.remove(lineNumber-1);
-			String currentLine; 
+			lineToRemove = dataListFromFile.get(lineNumber - 1);
+			dataListFromFile.remove(lineNumber - 1);
+			String currentLine;
 			executeClear();
 
-			for (int i=0; i<dataListFromFile.size(); i++){
+			for (int i = 0; i < dataListFromFile.size(); i++) {
 				executeAdd(dataListFromFile.get(i));
 			}
 
-			String message = getDeleteMessage(fileName, lineToRemove );
+			String message = String.format(MESSAGE_DELETE, fileName, lineToRemove);
 			showLineToUser(message);
 
-		}catch (IndexOutOfBoundsException e){
-			String message = getDisplayEmptyMessage(fileName);
+		} catch (IndexOutOfBoundsException e) {
+			String message = String.format(MESSAGE_DISPLAY_EMPTY, fileName);
 			showLineToUser(message);
 		}
 
@@ -159,24 +159,27 @@ public class TextBuddy {
 		System.out.println(text);
 	}
 
-	private static boolean isFileDeclared(String[] file){
+	private static boolean isFileDeclared(String[] file) {
 		return file.length > 0;
 	}
 
-	private static boolean isFileAlreadyCreated(String fileName){
+	private static boolean isFileAlreadyCreated(String fileName) {
 		inputFile = new File(fileName);
 		return (inputFile.exists() ? true : false);
 	}
 
-	private static void createFile(File file){
-		try {
-			file.createNewFile();
-		} catch (IOException e) {
-			showLineToUser(ERROR_CREATING_FILE);
+	public static void createFile(String fileName) {
+		if(!isFileAlreadyCreated(fileName)){
+			try {
+				inputFile.createNewFile();
+			} catch (IOException e) {
+				showLineToUser(ERROR_CREATING_FILE);
+			}
 		}
+		
 	}
 
-	private static void saveToExistingFile(String content){
+	private static void saveToExistingFile(String content) {
 		try {
 			BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile, true));
 			bw.write(content);
@@ -187,43 +190,25 @@ public class TextBuddy {
 		}
 	}
 
-	private static String getFirstWord(String userCommand){
+	private static String getFirstWord(String userCommand) {
 		String commandTypeString = userCommand.trim().split("\\s+")[0];
 		return commandTypeString;
 	}
 
-	private static String removeFirstWord(String userCommand){
-		String description = userCommand.replace(getFirstWord(userCommand),"").trim();
+	private static String removeFirstWord(String userCommand) {
+		String description = userCommand.replace(getFirstWord(userCommand), "").trim();
 		return description;
 	}
 
-	private static String getWelcomeMessage(String fileName){
-		return String.format(MESSAGE_WELCOME, fileName);
-	}
 
-	private static String getAddMessage(String fileName, String message){
-		return String.format(MESSAGE_ADD, fileName, message);
-	}
-
-	private static String getDeleteMessage(String fileName, String message){
-		return String.format(MESSAGE_DELETE, fileName, message);
-	}
-
-	private static String getClearMessage(String fileName) {
-		return String.format(MESSAGE_CLEAR, fileName);
-	}
-
-	private static String getDisplayEmptyMessage(String fileName){
-		return String.format(MESSAGE_DISPLAY_EMPTY, fileName);
-	}
-	private static String getCommand(){
+	private static String getCommand() {
 		String command = scanner.nextLine();
 		return command;
 	}
 
-	private static COMMAND_TYPE getCommandType(String commandTypeString){
+	private static COMMAND_TYPE getCommandType(String commandTypeString) {
 
-		if (commandTypeString == null){
+		if (commandTypeString == null) {
 			throw new Error("commandTypeString cannot be null");
 		}
 
@@ -233,23 +218,23 @@ public class TextBuddy {
 			return COMMAND_TYPE.DISPLAY;
 		} else if (commandTypeString.equalsIgnoreCase("clear")) {
 			return COMMAND_TYPE.CLEAR;
-		} else if (commandTypeString.equalsIgnoreCase("delete")){
+		} else if (commandTypeString.equalsIgnoreCase("delete")) {
 			return COMMAND_TYPE.DELETE;
-		} else if (commandTypeString.equalsIgnoreCase("exit")){
+		} else if (commandTypeString.equalsIgnoreCase("exit")) {
 			return COMMAND_TYPE.EXIT;
 		} else {
 			return COMMAND_TYPE.INVALID;
 		}
 	}
 
-	private static ArrayList<String> fetchDataFromFile(){
+	private static ArrayList<String> fetchDataFromFile() {
 		ArrayList<String> content = null;
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(inputFile));
 			content = new ArrayList<String>();
 			String line;
 
-			while ((line = br.readLine()) != null){
+			while ((line = br.readLine()) != null) {
 				content.add(line);
 			}
 			br.close();
@@ -261,4 +246,7 @@ public class TextBuddy {
 		return content;
 
 	}
+	
 }
+
+

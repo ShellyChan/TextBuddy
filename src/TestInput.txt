@@ -1,0 +1,14 @@
+display
+add giggity
+add peter
+add steward
+display
+delete 1
+display
+add stewie
+display
+blah blah
+clear
+display
+delete 2
+exit
