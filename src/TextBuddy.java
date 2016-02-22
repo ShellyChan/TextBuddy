@@ -17,8 +17,18 @@ import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
  * 
  *         Name : Ingine Hmwe 
  *         Tut : W05
- *         Matric No. : A0112835L 
  *         Team : T16-1J
+ *
+ */
+
+
+/**
+ * Precondition: The program requires the user to provide the name of the text file at the start. 
+ * 				If the provided text file does not exist, it will be created.
+ * 
+ * This is the program where users can add items to the text file ,or display and delete items
+ * from the text file or clear the entire items. In addition, it provides functionality to sort the items
+ * in the list alphabetically and  to search for words in the lines. 
  *
  */
 public class TextBuddy {
@@ -31,6 +41,7 @@ public class TextBuddy {
 	// to store text from file in the list for display purpose
 	private static ArrayList<String> dataListFromFile;
 
+	//Message to feedback to user
 	private static final String MESSAGE_WELCOME = "Welcome to TextBuddy. %s is ready for use";
 	private static final String MESSAGE_COMMAND = "command: ";
 	private static final String MESSAGE_ADD = "added to %1$s: \"%2$s\"";
@@ -44,13 +55,12 @@ public class TextBuddy {
 	private static final String ERROR_FILE_NOT_FOUND = "File not found while reading file";
 	private static final String ERROR_WRITING_FILE = "Error occurs while writing to file";
 	private static final String ERROR_READING_FILE = "Error occurs while reading to file";
-	private static final String ERROR_CLEARING_FILE = "Error occurs while clearing data from the file";
 
 	private static Scanner scanner = new Scanner(System.in);
 
 	// possible command types
 	enum COMMAND_TYPE {
-		ADD, DISPLAY, DELETE, CLEAR, EXIT, INVALID
+		ADD, DISPLAY, DELETE, CLEAR, EXIT, INVALID, SEARCH, SORT
 	};
 
 	public static void main(String[] args) throws IOException {
@@ -95,6 +105,10 @@ public class TextBuddy {
 			message = String.format(MESSAGE_CLEAR, fileName);
 			showLineToUser(message);
 			break;
+		case SORT:
+			break;
+		case SEARCH:
+			break;
 		case EXIT:
 			System.exit(0);
 		case INVALID:
@@ -105,6 +119,17 @@ public class TextBuddy {
 
 	}
 
+	public static void createFile(String fileName) {
+		if(!isFileAlreadyCreated(fileName)){
+			try {
+				inputFile.createNewFile();
+			} catch (IOException e) {
+				showLineToUser(ERROR_CREATING_FILE);
+			}
+		}
+		
+	}
+	
 	private static void executeAdd(String description) {
 		saveToExistingFile(description);
 	}
@@ -125,12 +150,12 @@ public class TextBuddy {
 		}
 	}
 
-	public static void executeClear() {
+	private static void executeClear() {
 		inputFile.delete();
 		createFile(fileName);
 	}
 
-	public static void executeDelete(int lineNumber) {
+	private static void executeDelete(int lineNumber) {
 		String lineToRemove = null;
 		try {
 
@@ -154,29 +179,26 @@ public class TextBuddy {
 		}
 
 	}
+	
+	private static void executeSort(){
+		
+	}
 
+	public static void executeSearch(){
+		
+	}
+	
 	private static void showLineToUser(String text) {
 		System.out.println(text);
 	}
 
 	private static boolean isFileDeclared(String[] file) {
-		return file.length > 0;
+		return (file.length > 0);
 	}
 
 	private static boolean isFileAlreadyCreated(String fileName) {
 		inputFile = new File(fileName);
 		return (inputFile.exists() ? true : false);
-	}
-
-	public static void createFile(String fileName) {
-		if(!isFileAlreadyCreated(fileName)){
-			try {
-				inputFile.createNewFile();
-			} catch (IOException e) {
-				showLineToUser(ERROR_CREATING_FILE);
-			}
-		}
-		
 	}
 
 	private static void saveToExistingFile(String content) {
