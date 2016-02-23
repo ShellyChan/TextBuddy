@@ -7,6 +7,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Scanner;
 
 import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
@@ -28,7 +30,7 @@ import org.omg.CosNaming.NamingContextExtPackage.AddressHelper;
  * 
  * This is the program where users can add items to the text file ,or display and delete items
  * from the text file or clear the entire items. In addition, it provides functionality to sort the items
- * in the list alphabetically and  to search for words in the lines. 
+ * in the list alphabetically and  to search for words ,returning the lines one by one if there is a match. 
  *
  */
 public class TextBuddy {
@@ -36,10 +38,9 @@ public class TextBuddy {
 	// to store user input text in the file
 	public static String fileName;
 	public static String message;
-	private static File inputFile;
+	public static ArrayList<String> itemList;
 
-	// to store text from file in the list for display purpose
-	private static ArrayList<String> dataListFromFile;
+	private static File inputFile;
 
 	//Message to feedback to user
 	private static final String MESSAGE_WELCOME = "Welcome to TextBuddy. %s is ready for use";
@@ -55,7 +56,8 @@ public class TextBuddy {
 	private static final String ERROR_FILE_NOT_FOUND = "File not found while reading file";
 	private static final String ERROR_WRITING_FILE = "Error occurs while writing to file";
 	private static final String ERROR_READING_FILE = "Error occurs while reading to file";
-
+	private static final String ERROR_SEARCH_NOT_FOUND = "Search not found";
+	private static final String ERROR_SEARCH_WORD_EMPTY = "Search word is missing";
 	private static Scanner scanner = new Scanner(System.in);
 
 	// possible command types
@@ -67,18 +69,23 @@ public class TextBuddy {
 		
 		if (isFileDeclared(args)) {
 			fileName = args[0];
-			showLineToUser(String.format(MESSAGE_WELCOME, fileName));
+			itemList = new ArrayList<>();
 			createFile(fileName);
-			
-			while (true) {
-				showLineToUser(MESSAGE_COMMAND);	
-				executeCommand(getCommand());
-			}
 
+			showLineToUser(String.format(MESSAGE_WELCOME, fileName));
+			
 		} else {
 			showLineToUser(ERROR_INVALID_FILE_COMMAND);
 		}
+		
+		showLineToUser(MESSAGE_COMMAND);	
+		while (scanner.hasNextLine()) {
+			executeCommand(getCommand());
+			saveToFile(itemList);
+			showLineToUser(MESSAGE_COMMAND);	
 
+		}
+		scanner.close();
 	}
 
 	public static void executeCommand(String userCommand) throws IOException {
@@ -89,9 +96,7 @@ public class TextBuddy {
 		switch (commandType) {
 		case ADD:
 			String userInputLine = removeFirstWord(userCommand);
-			executeAdd(userInputLine);
-			message = String.format(MESSAGE_ADD, fileName, userInputLine);
-			showLineToUser(message);
+			executeAdd(userInputLine);		
 			break;
 		case DISPLAY:
 			executeDisplay();
@@ -102,12 +107,13 @@ public class TextBuddy {
 			break;
 		case CLEAR:
 			executeClear();
-			message = String.format(MESSAGE_CLEAR, fileName);
-			showLineToUser(message);
 			break;
 		case SORT:
+			executeSort(itemList);
 			break;
 		case SEARCH:
+			String searchWord = removeFirstWord(userCommand);
+			executeSearch(itemList, searchWord);
 			break;
 		case EXIT:
 			System.exit(0);
@@ -126,50 +132,49 @@ public class TextBuddy {
 			} catch (IOException e) {
 				showLineToUser(ERROR_CREATING_FILE);
 			}
+		} else{
+			itemList = fetchDataFromFile();
 		}
-		
 	}
 	
 	private static void executeAdd(String description) {
-		saveToExistingFile(description);
+		
+		itemList.add(description);
+		message = String.format(MESSAGE_ADD, fileName, description);
+		showLineToUser(message);
 	}
 
 	private static void executeDisplay() throws IOException {
-		ArrayList<String> dataFromFile = fetchDataFromFile();
-		if (dataFromFile.isEmpty()) {
-			String emptyMessage = String.format(MESSAGE_DISPLAY_EMPTY, fileName);
-			showLineToUser(emptyMessage);
+		if (itemList.isEmpty()) {
+			message = String.format(MESSAGE_DISPLAY_EMPTY, fileName);
+			showLineToUser(message);
 		} else {
-			String textToDisplay;
-			int lineNumber;
-			for (int i = 0; i < dataFromFile.size(); i++) {
-				lineNumber = i + 1;
-				textToDisplay = lineNumber + "." + dataFromFile.get(i);
-				showLineToUser(textToDisplay);
-			}
+			display();
+		}
+	}
+	
+	private static void display(){
+		String textToDisplay;
+		int lineNumber;
+		for (int i = 0; i < itemList.size(); i++) {
+			lineNumber = i + 1;
+			textToDisplay = lineNumber + "." + itemList.get(i);
+			showLineToUser(textToDisplay);
 		}
 	}
 
 	private static void executeClear() {
-		inputFile.delete();
-		createFile(fileName);
+		itemList.clear();
+		message = String.format(MESSAGE_CLEAR, fileName);
+		showLineToUser(message);
 	}
 
 	private static void executeDelete(int lineNumber) {
 		String lineToRemove = null;
 		try {
-
-			dataListFromFile = fetchDataFromFile();
-
-			lineToRemove = dataListFromFile.get(lineNumber - 1);
-			dataListFromFile.remove(lineNumber - 1);
-			String currentLine;
-			executeClear();
-
-			for (int i = 0; i < dataListFromFile.size(); i++) {
-				executeAdd(dataListFromFile.get(i));
-			}
-
+			lineToRemove = itemList.get(lineNumber - 1);
+			itemList.remove(lineNumber - 1);
+		
 			String message = String.format(MESSAGE_DELETE, fileName, lineToRemove);
 			showLineToUser(message);
 
@@ -180,12 +185,27 @@ public class TextBuddy {
 
 	}
 	
-	private static void executeSort(){
-		
+	//sort the items in the list alphabetically 
+	private static void executeSort(ArrayList<String> itemList){
+		Collections.sort(itemList);
 	}
 
-	public static void executeSearch(){
+	public static void executeSearch(ArrayList<String> itemList, String searchWord){
+		boolean isFound = false;
+		if(searchWord.isEmpty()){
+			showLineToUser(ERROR_SEARCH_WORD_EMPTY);
+			return;
+		}
 		
+		for(int i=0; i < itemList.size(); i++){
+			if(itemList.get(i).toLowerCase().contains(searchWord.toLowerCase())){
+				showLineToUser(itemList.get(i));
+				isFound = true;
+			}
+		}
+		if(!isFound){
+			showLineToUser(ERROR_SEARCH_NOT_FOUND);
+		}
 	}
 	
 	private static void showLineToUser(String text) {
@@ -201,11 +221,13 @@ public class TextBuddy {
 		return (inputFile.exists() ? true : false);
 	}
 
-	private static void saveToExistingFile(String content) {
+	private static void saveToFile(ArrayList<String> itemList) {
 		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile, true));
-			bw.write(content);
-			bw.newLine();
+			BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile));
+			for(int i =0; i < itemList.size(); i++){
+				bw.write(itemList.get(i));
+				bw.newLine();
+			}
 			bw.close();
 		} catch (IOException e) {
 			showLineToUser(ERROR_WRITING_FILE);
@@ -244,6 +266,10 @@ public class TextBuddy {
 			return COMMAND_TYPE.DELETE;
 		} else if (commandTypeString.equalsIgnoreCase("exit")) {
 			return COMMAND_TYPE.EXIT;
+		} else if (commandTypeString.equalsIgnoreCase("sort")){
+			return COMMAND_TYPE.SORT;	
+		} else if (commandTypeString.equalsIgnoreCase("search")){
+			return COMMAND_TYPE.SEARCH;
 		} else {
 			return COMMAND_TYPE.INVALID;
 		}
